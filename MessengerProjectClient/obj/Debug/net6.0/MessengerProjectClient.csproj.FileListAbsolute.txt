@@ -1,0 +1,15 @@
+/Users/Ezradweck/C#/MessengerProjectClient/bin/Debug/net6.0/MessengerProjectClient
+/Users/Ezradweck/C#/MessengerProjectClient/bin/Debug/net6.0/MessengerProjectClient.deps.json
+/Users/Ezradweck/C#/MessengerProjectClient/bin/Debug/net6.0/MessengerProjectClient.runtimeconfig.json
+/Users/Ezradweck/C#/MessengerProjectClient/bin/Debug/net6.0/MessengerProjectClient.dll
+/Users/Ezradweck/C#/MessengerProjectClient/bin/Debug/net6.0/ref/MessengerProjectClient.dll
+/Users/Ezradweck/C#/MessengerProjectClient/bin/Debug/net6.0/MessengerProjectClient.pdb
+/Users/Ezradweck/C#/MessengerProjectClient/obj/Debug/net6.0/MessengerProjectClient.csproj.AssemblyReference.cache
+/Users/Ezradweck/C#/MessengerProjectClient/obj/Debug/net6.0/MessengerProjectClient.GeneratedMSBuildEditorConfig.editorconfig
+/Users/Ezradweck/C#/MessengerProjectClient/obj/Debug/net6.0/MessengerProjectClient.AssemblyInfoInputs.cache
+/Users/Ezradweck/C#/MessengerProjectClient/obj/Debug/net6.0/MessengerProjectClient.AssemblyInfo.cs
+/Users/Ezradweck/C#/MessengerProjectClient/obj/Debug/net6.0/MessengerProjectClient.csproj.CoreCompileInputs.cache
+/Users/Ezradweck/C#/MessengerProjectClient/obj/Debug/net6.0/MessengerProjectClient.dll
+/Users/Ezradweck/C#/MessengerProjectClient/obj/Debug/net6.0/ref/MessengerProjectClient.dll
+/Users/Ezradweck/C#/MessengerProjectClient/obj/Debug/net6.0/MessengerProjectClient.pdb
+/Users/Ezradweck/C#/MessengerProjectClient/obj/Debug/net6.0/MessengerProjectClient.genruntimeconfig.cache
