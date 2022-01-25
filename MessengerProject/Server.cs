@@ -9,7 +9,6 @@ namespace MessengerProject
     public class Server
     {
         #region Private Members
-
         // Structure to store the client information
         private struct Client
         {
@@ -85,9 +84,6 @@ namespace MessengerProject
                 // Initialise a packet object to store the received data
                 Packet receivedData = new Packet(this.dataStream);
 
-                // Initialise a packet object to store the data to be sent
-                Packet sendData = new Packet();
-
                 // Initialise the IPEndPoint for the clients
                 IPEndPoint clients = new IPEndPoint(IPAddress.Any, 0);
 
@@ -97,14 +93,10 @@ namespace MessengerProject
                 // Receive all data
                 serverSocket.EndReceiveFrom(asyncResult, ref epSender);
 
-                // Fill the packet with the data to be sent
-                sendData.ChatDataIdentifier = receivedData.ChatDataIdentifier;
-                sendData.ChatName = receivedData.ChatName;
-
                 switch (receivedData.ChatDataIdentifier)
                 {
                     case Packet.DataIdentifier.Message:
-                        sendData.ChatMessage = string.Format("{0}: {1}", receivedData.ChatName, receivedData.ChatMessage);
+                        receivedData.ChatMessage = string.Format("{0}: {1}", receivedData.ChatName, receivedData.ChatMessage);
                         break;
 
                     case Packet.DataIdentifier.LogIn:
@@ -116,7 +108,7 @@ namespace MessengerProject
                         // Add client to list
                         this.clientList.Add(client);
 
-                        sendData.ChatMessage = string.Format("--- {0} is online ---", receivedData.ChatName);
+                        receivedData.ChatMessage = string.Format("--- {0} is online ---", receivedData.ChatName);
                         break;
 
                     case Packet.DataIdentifier.LogOut:
@@ -130,26 +122,27 @@ namespace MessengerProject
                             }
                         }
 
-                        sendData.ChatMessage = string.Format("--- {0} is offline ---", receivedData.ChatName);
+                        ReceiveData.ChatMessage = string.Format("--- {0} is offline ---", receivedData.ChatName);
                         break;
                 }
 
-                // Get packet as byte array
-                data = sendData.GetDataStream();
+                // Make the packet a byte array
+                data = receivedData.GetDataStream();
 
                 foreach (Client client in this.clientList)
                 {
-                    // may want to remove conditions
-                    if (client.endPoint != epSender || sendData.ChatDataIdentifier != Packet.DataIdentifier.LogIn)
+                    if (client.endPoint != epSender) // Don't send to client we received from
                     {
                         // Broadcast to all logged on users
                         serverSocket.BeginSendTo(data, 0, data.Length, SocketFlags.None, client.endPoint, new AsyncCallback(this.SendData), client.endPoint);
                     }
                 }
 
+                // Print message we sent out to server console
+                Console.WriteLine(receivedData.ChatMessage);
+
                 // Listen for more connections again...
                 serverSocket.BeginReceiveFrom(this.dataStream, 0, this.dataStream.Length, SocketFlags.None, ref epSender, new AsyncCallback(this.ReceiveData), epSender);
-                Console.WriteLine("Continuing to listen...");
             }
             catch (Exception ex)
             {
