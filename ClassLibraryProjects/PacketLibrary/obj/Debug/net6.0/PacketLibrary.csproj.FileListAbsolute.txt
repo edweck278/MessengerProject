@@ -1,0 +1,12 @@
+/Users/Ezradweck/C#/ClassLibraryProjects/PacketLibrary/bin/Debug/net6.0/PacketLibrary.deps.json
+/Users/Ezradweck/C#/ClassLibraryProjects/PacketLibrary/bin/Debug/net6.0/PacketLibrary.dll
+/Users/Ezradweck/C#/ClassLibraryProjects/PacketLibrary/bin/Debug/net6.0/ref/PacketLibrary.dll
+/Users/Ezradweck/C#/ClassLibraryProjects/PacketLibrary/bin/Debug/net6.0/PacketLibrary.pdb
+/Users/Ezradweck/C#/ClassLibraryProjects/PacketLibrary/obj/Debug/net6.0/PacketLibrary.csproj.AssemblyReference.cache
+/Users/Ezradweck/C#/ClassLibraryProjects/PacketLibrary/obj/Debug/net6.0/PacketLibrary.GeneratedMSBuildEditorConfig.editorconfig
+/Users/Ezradweck/C#/ClassLibraryProjects/PacketLibrary/obj/Debug/net6.0/PacketLibrary.AssemblyInfoInputs.cache
+/Users/Ezradweck/C#/ClassLibraryProjects/PacketLibrary/obj/Debug/net6.0/PacketLibrary.AssemblyInfo.cs
+/Users/Ezradweck/C#/ClassLibraryProjects/PacketLibrary/obj/Debug/net6.0/PacketLibrary.csproj.CoreCompileInputs.cache
+/Users/Ezradweck/C#/ClassLibraryProjects/PacketLibrary/obj/Debug/net6.0/PacketLibrary.dll
+/Users/Ezradweck/C#/ClassLibraryProjects/PacketLibrary/obj/Debug/net6.0/ref/PacketLibrary.dll
+/Users/Ezradweck/C#/ClassLibraryProjects/PacketLibrary/obj/Debug/net6.0/PacketLibrary.pdb
