@@ -33,6 +33,11 @@ namespace MessengerProject
         }
         private void Server_Load()
         {
+            Connect();
+            
+        }
+        private void Connect() 
+        {
             try
             {
                 // Initialise the ArrayList of connected clients
@@ -42,7 +47,7 @@ namespace MessengerProject
                 serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
                 // Initialise the IPEndPoint for the server and listen on port 8080
-                IPEndPoint server = new IPEndPoint(IPAddress.Any, 8080);
+                IPEndPoint server = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 8080);
 
                 // Associate the socket with this IP address and port
                 serverSocket.Bind(server);
@@ -63,7 +68,7 @@ namespace MessengerProject
                 Console.WriteLine("Load Error: " + ex.Message, "UDP Server");
             }
         }
-        public void SendData(IAsyncResult asyncResult)
+        private void SendData(IAsyncResult asyncResult)
         {
             try
             {
@@ -122,7 +127,7 @@ namespace MessengerProject
                             }
                         }
 
-                        ReceiveData.ChatMessage = string.Format("--- {0} is offline ---", receivedData.ChatName);
+                        receivedData.ChatMessage = string.Format("--- {0} is offline ---", receivedData.ChatName);
                         break;
                 }
 

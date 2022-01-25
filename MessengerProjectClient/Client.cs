@@ -39,13 +39,14 @@ namespace MessengerProjectClient
 
             ConsoleKeyInfo cki;
 
-            Console.WriteLine("\nYou can now send messages! Press the 'Enter/Return' key to start typing a message to send.\nNote: You will not be able to receive messages while typing...\nPress 'esc' to quit at any time.");
+            Console.WriteLine("You can now send messages! Press the 'Enter/Return' key to start typing a message to send.\nNote: You will not be able to receive messages while typing...\nPress 'esc' to quit at any time.");
 
             while (true) 
             {
                 // As long as client is not typing - listen for incoming messages
                 while (Console.KeyAvailable == false)
                 {
+                    // wait a second?
                     // Begin listening (receive messages)
                     Listen();
                 }
@@ -57,10 +58,11 @@ namespace MessengerProjectClient
                 } 
                 else if (cki.Key == ConsoleKey.Enter) 
                 {
+                    Console.WriteLine("Type your message:");
                     msg += Console.ReadLine();
                     Send();
                 }
-                Console.WriteLine("\nPress 'Enter/Return' to send another message.");  
+                Console.WriteLine("Press 'Enter/Return' to send another message.");  
             }
         }
 
@@ -181,6 +183,8 @@ namespace MessengerProjectClient
                 // Reset data stream
                 this.dataStream = new byte[1024];
             }
+            catch (ObjectDisposedException)
+            { }
             catch (Exception ex)
             {
                 Console.WriteLine("Receive Data: " + ex.Message, "UDP Client");

@@ -13,3 +13,6 @@
 /Users/Ezradweck/C#/MessengerProject/obj/Debug/net6.0/ref/MessengerProject.dll
 /Users/Ezradweck/C#/MessengerProject/obj/Debug/net6.0/MessengerProject.pdb
 /Users/Ezradweck/C#/MessengerProject/obj/Debug/net6.0/MessengerProject.genruntimeconfig.cache
+/Users/Ezradweck/C#/MessengerProject/bin/Debug/net6.0/PacketLibrary.dll
+/Users/Ezradweck/C#/MessengerProject/bin/Debug/net6.0/PacketLibrary.pdb
+/Users/Ezradweck/C#/MessengerProject/obj/Debug/net6.0/MessengerProject.csproj.CopyComplete
