@@ -2,7 +2,7 @@ using System.Net.Sockets;
 using System.Net;
 using System.Collections;
 
-using MessengerProjectPacket;
+using MessengerPacket;
 
 namespace MessengerProject
 {
@@ -103,11 +103,11 @@ namespace MessengerProject
 
                 switch (receivedData.ChatDataIdentifier)
                 {
-                    case DataIdentifier.Message:
+                    case Packet.DataIdentifier.Message:
                         sendData.ChatMessage = string.Format("{0}: {1}", receivedData.ChatName, receivedData.ChatMessage);
                         break;
 
-                    case DataIdentifier.LogIn:
+                    case Packet.DataIdentifier.LogIn:
                         // Populate client object
                         Client client = new Client();
                         client.endPoint = epSender;
@@ -119,7 +119,7 @@ namespace MessengerProject
                         sendData.ChatMessage = string.Format("--- {0} is online ---", receivedData.ChatName);
                         break;
 
-                    case DataIdentifier.LogOut:
+                    case Packet.DataIdentifier.LogOut:
                         // Remove current client from list
                         foreach (Client c in this.clientList)
                         {
@@ -140,7 +140,7 @@ namespace MessengerProject
                 foreach (Client client in this.clientList)
                 {
                     // may want to remove conditions
-                    if (client.endPoint != epSender || sendData.ChatDataIdentifier != DataIdentifier.LogIn)
+                    if (client.endPoint != epSender || sendData.ChatDataIdentifier != Packet.DataIdentifier.LogIn)
                     {
                         // Broadcast to all logged on users
                         serverSocket.BeginSendTo(data, 0, data.Length, SocketFlags.None, client.endPoint, new AsyncCallback(this.SendData), client.endPoint);
