@@ -1,5 +1,6 @@
 using System.Net.Sockets;
 using System.Net;
+using System.IO;
 
 using MessengerPacket;
 
@@ -8,19 +9,20 @@ namespace MessengerProjectClient
     public class Client
     {
         #region Private Members
-        // Client socket
+        // Client sockets
         private Socket clientSocket;
+        private Socket clientSocketFiles;
 
         // Client name
         private string name = "";
-        // Default message
-        private string msg = "";
 
-        // Server End Point
+        // Server End Points
         private EndPoint epServer;
+        private EndPoint epServerFiles;
 
-        // Data stream
+        // Data streams
         private byte[] dataStream = new byte[1024];
+        private byte[] fileDataStream = new byte[4096];
         #endregion
 
         #region Methods
@@ -35,38 +37,61 @@ namespace MessengerProjectClient
             Console.WriteLine("Welcome to messenger!");
             Console.WriteLine("To log on, please enter your name:");
             this.name += Console.ReadLine();
-            Connect();
+            ConnectForMessages();
+            ConnectForFiles();
 
             ConsoleKeyInfo cki;
+            string msg = "";
+            string file_path = "";
 
-            Console.WriteLine("You can now send messages! Press the 'Enter/Return' key to start typing a message to send.\nNote: You will not be able to receive messages while typing...\nPress 'esc' to quit at any time.");
+            Console.WriteLine("You can now communicate!");
+            Console.WriteLine("Press the 'M' key to start typing a message to send.");
+            Console.WriteLine("Press the 'F' key to send a file.");
+            Console.WriteLine("Note: You will not be able to receive while sending...");
+            Console.WriteLine("Press 'esc' to quit at any time.");
 
             while (true) 
             {
-                // As long as client is not typing - listen for incoming messages
+                // As long as client is not typing - listen for incoming data
                 while (Console.KeyAvailable == false)
                 {
-                    // wait a second?
-                    // Begin listening (receive messages)
+                    //TODO wait a second?
+                    // Begin listening (receive messages and files)
                     Listen();
                 }
                 cki = Console.ReadKey();
-                if (cki.Key == ConsoleKey.Escape) 
+                switch (cki.Key)
                 {
-                    Disconnect();
-                    break;
-                } 
-                else if (cki.Key == ConsoleKey.Enter) 
-                {
-                    Console.WriteLine("Type your message:");
-                    msg += Console.ReadLine();
-                    Send();
+                    case ConsoleKey.Escape:
+                        Disconnect();
+                        break;
+                    case ConsoleKey.M:
+                        Console.WriteLine("Type your message:");
+                        msg += Console.ReadLine();
+                        Send(msg);
+                        msg = "";
+                        break;
+                    case ConsoleKey.F:
+                        Console.WriteLine("Which file would you like to send? (must be .json or .xml)\nInput full path:");
+                        file_path += Console.ReadLine();
+                        while (!file_path.EndsWith(".json") && !file_path.EndsWith(".xml"))
+                        {
+                            file_path = "";
+                            Console.WriteLine("You must choose a .json or .xml! Re-enter path:");
+                            file_path += Console.ReadLine();
+                        }
+                        SendAFile(file_path);
+                        file_path = "";
+                        break;
+                    default:
+                        break;
+
                 }
-                Console.WriteLine("Press 'Enter/Return' to send another message.");  
+                Console.WriteLine("Press 'M' to send a message or 'F' to send a file.");  
             }
         }
 
-        private void Connect()
+        private void ConnectForMessages()
         {
             try
             {
@@ -99,10 +124,30 @@ namespace MessengerProjectClient
             }
         }
 
+        private void ConnectForFiles()
+        {
+            // Intitialize Socket
+            clientSocketFiles = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+
+            // Initialise server IP
+            IPAddress serverIP = IPAddress.Parse("127.0.0.1");
+
+            // Initialise the IPEndPoint for the server and use port 8081
+            IPEndPoint server = new IPEndPoint(serverIP, 8081);
+
+            // Initialise the EndPoint for the server
+            epServerFiles = (EndPoint)server;
+
+            clientSocketFiles.BeginConnect(serverIP, 8081, endConnect, null);
+        }
+
         private void Listen()
         {
-            // listen for broadcasts
+            // listen for message broadcasts
             clientSocket.BeginReceiveFrom(this.dataStream, 0, this.dataStream.Length, SocketFlags.None, ref epServer, new AsyncCallback(this.ReceiveData), null);
+
+            // listen for file broadcasts
+            clientSocketFiles.BeginReceiveFrom(this.fileDataStream, 0, this.fileDataStream.Length, SocketFlags.None, ref epServerFiles, new AsyncCallback(this.ReceiveFile), null);
         }
 
         private void Disconnect()
@@ -121,8 +166,9 @@ namespace MessengerProjectClient
                 // Send packet to the server
                 this.clientSocket.SendTo(byteData, 0, byteData.Length, SocketFlags.None, epServer);
 
-                // Close the socket
+                // Close the sockets
                 this.clientSocket.Close();
+                this.clientSocketFiles.Close();
             }
             catch (Exception ex)
             {
@@ -130,14 +176,14 @@ namespace MessengerProjectClient
             }
         }
 
-        private void Send()
+        private void Send(string msg)
         {
             try
             {
                 // Initialise a packet object to store the data to be sent
                 Packet sendData = new Packet();
                 sendData.ChatName = this.name;
-                sendData.ChatMessage = this.msg;
+                sendData.ChatMessage = msg;
                 sendData.ChatDataIdentifier = Packet.DataIdentifier.Message;
 
                 // Make packet a byte array
@@ -151,9 +197,21 @@ namespace MessengerProjectClient
                 Console.WriteLine("Send Error: " + ex.Message, "UDP Client");
             }
         }
+
+        private void SendAFile(string file_path)
+        {
+            try
+            {
+                // TODO
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("SendFile Error: " + ex.Message, "TCP Client");
+            }
+        }
         #endregion
 
-        #region Send And Receive
+        #region Callbacks
         private void SendData(IAsyncResult ar)
         {
             try
@@ -164,6 +222,11 @@ namespace MessengerProjectClient
             {
                 Console.WriteLine("Send Data: " + ex.Message, "UDP Client");
             }
+        }
+
+        private void SendFile(IAsyncResult ar)
+        {
+            // TODO
         }
 
         private void ReceiveData(IAsyncResult ar)
@@ -190,6 +253,62 @@ namespace MessengerProjectClient
                 Console.WriteLine("Receive Data: " + ex.Message, "UDP Client");
             }
         }
+
+        private void ReceiveFile(IAsyncResult ar)
+        {
+            try
+            {
+                // Receive all data
+                this.clientSocket.EndReceive(ar);
+
+                // Notify user that a file was received and ask if they would like to accept
+                Console.WriteLine("File received! Would you like to accept it? (y/n)");
+                ConsoleKeyInfo cki;
+                cki = Console.ReadKey();
+                while (cki.Key != ConsoleKey.Y && cki.Key != ConsoleKey.N)
+                {
+                    Console.WriteLine("Only press Y or N!");
+                    cki = Console.ReadKey();
+                }
+
+                // If user doesn't want file - stop receiving and continue program
+                if (cki.Key == ConsoleKey.N)
+                {
+                    return;
+                }
+
+                // Otherwise ask where he wants to save it and what he wants to name it...
+                string path = "";
+                Console.WriteLine("Where would you like to save it? (input path ending with a slash...)");
+                path += Console.ReadLine();
+                Console.WriteLine("What would you like to name it? (do not include extension)");
+                path += Console.ReadLine();
+
+                // Get file type, add to the path, and save file
+                bool type = Convert.ToBoolean(fileDataStream[0]); // If true - json. If false - xml.
+                byte[] fileStream = fileDataStream.Skip(1).Take(4095).ToArray();
+                path += (type) ? ".json" : ".xml";
+                File.WriteAllBytes(path, fileStream);
+                
+                // Reset data stream
+                this.fileDataStream = new byte[4096];
+            }
+            catch (ObjectDisposedException)
+            { }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Receive File: " + ex.Message, "TCP Client");
+            }
+        }
+        
+        private void endConnect(IAsyncResult ar) {
+            try {
+                clientSocketFiles.EndConnect(ar);
+            } catch (Exception ex) {
+                Console.WriteLine("Connection attempt is unsuccessful: " + ex.Message, "TCP Client");
+            }
+        }
+
         #endregion
     }
 }
