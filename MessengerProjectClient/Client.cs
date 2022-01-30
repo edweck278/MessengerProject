@@ -31,6 +31,7 @@ namespace MessengerProjectClient
         {
             Client_Load();
         }
+        
         private void Client_Load()
         {
             // Welcome and connect
