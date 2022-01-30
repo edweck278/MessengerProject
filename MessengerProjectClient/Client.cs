@@ -202,7 +202,22 @@ namespace MessengerProjectClient
         {
             try
             {
-                // TODO
+                // Read file into byte array
+                byte[] byteData = File.ReadAllBytes(file_path);
+
+                // Add byte to the front of the array that says if its json or xml (true=json, false=xml)
+                bool type = false; // default filetype is xml
+                if (file_path.EndsWith(".json"))
+                {
+                    type = true;
+                }
+                byte file_type = Convert.ToByte(type);
+                byte[] byteDataFile = new byte[byteData.Length+1];
+                byteDataFile[0] = file_type;
+                Array.Copy(byteData, 0, byteDataFile, 1, byteData.Length); 
+
+                // Send data to the server
+                clientSocketFiles.BeginSendTo(byteDataFile, 0, byteDataFile.Length, SocketFlags.None, epServerFiles, new AsyncCallback(this.SendFile), null);
             }
             catch (Exception ex)
             {
@@ -226,7 +241,14 @@ namespace MessengerProjectClient
 
         private void SendFile(IAsyncResult ar)
         {
-            // TODO
+            try
+            {
+                clientSocketFiles.EndSend(ar);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Send File: " + ex.Message, "TCP Client");
+            }
         }
 
         private void ReceiveData(IAsyncResult ar)
