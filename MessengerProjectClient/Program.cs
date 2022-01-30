@@ -4,7 +4,8 @@
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            Console.Title = "Client";
+            Client client = new Client();
         }
     }
 }

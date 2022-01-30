@@ -1,0 +1,7 @@
+/Users/Ezradweck/C#/MessengerProjectClient/bin/Debug/net6.0/publish/MessengerProjectClient
+/Users/Ezradweck/C#/MessengerProjectClient/bin/Debug/net6.0/publish/MessengerProjectClient.dll
+/Users/Ezradweck/C#/MessengerProjectClient/bin/Debug/net6.0/publish/MessengerProjectClient.deps.json
+/Users/Ezradweck/C#/MessengerProjectClient/bin/Debug/net6.0/publish/MessengerProjectClient.runtimeconfig.json
+/Users/Ezradweck/C#/MessengerProjectClient/bin/Debug/net6.0/publish/MessengerProjectClient.pdb
+/Users/Ezradweck/C#/MessengerProjectClient/bin/Debug/net6.0/publish/PacketLibrary.dll
+/Users/Ezradweck/C#/MessengerProjectClient/bin/Debug/net6.0/publish/PacketLibrary.pdb
