@@ -7,6 +7,10 @@ namespace MessengerPacket
     // Packet Structure:
     // Description   -> |dataIdentifier|name length|message length|    name   |    message   |
     // Size in bytes -> |       4      |     4     |       4      |name length|message length|
+    
+    /// <summary>
+    /// Packet class is a format for sending messages between client and server
+    /// </summary>
     public class Packet
     {
         public enum DataIdentifier
@@ -23,18 +27,21 @@ namespace MessengerPacket
         #endregion
 
         #region Public Properties
+        /// <value> The type of message, namely- login, logout, or a text message... </value>
         public DataIdentifier ChatDataIdentifier
         {
             get { return dataIdentifier; }
             set { dataIdentifier = value; }
         }
 
+        /// <value> Name of the client sending the message </value>
         public string ChatName
         {
             get { return name; }
             set { name = value; }
         }
 
+        /// <value> The text of the message itself </value>
         public string ChatMessage
         {
             get { return message; }
@@ -44,7 +51,9 @@ namespace MessengerPacket
 
         #region Methods
 
+        /// <summary>
         /// Default Constructor
+        /// </summary>
         public Packet()
         {
             this.dataIdentifier = DataIdentifier.Null;
@@ -52,7 +61,10 @@ namespace MessengerPacket
             this.name = "";
         }
 
-        /// Construct a packet from an input
+        /// <summary>
+        /// Construct a Packet from input
+        /// </summary>
+        /// <param name="dataStream"> the input data to construct the packet out of </param>
         public Packet(byte[] dataStream)
         {
             // Read the data identifier from the beginning of the stream (4 bytes)
@@ -71,7 +83,10 @@ namespace MessengerPacket
             this.message = Encoding.UTF8.GetString(dataStream, 12 + nameLength, msgLength);
         }
 
-        /// Converts the packet into a byte array for sending/receiving 
+        /// <summary>
+        /// Converts the packet into a byte array for sending/receiving
+        /// </summary> 
+        /// <return> The byte array we made </return>
         public byte[] GetDataStream()
         {
             List<byte> dataStream = new List<byte>();

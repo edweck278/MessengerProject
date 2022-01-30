@@ -1,14 +1,21 @@
 using System.Net.Sockets;
 using System.Net;
 using System.IO;
+using System.Threading;
 
 using MessengerPacket;
 
 namespace MessengerProjectClient
 {
+    /// <summary>
+    /// Client class is a console application that implements the behavior of a client for client-server communication.
+    /// </summary>
     public class Client
     {
         #region Private Members
+        // Server IP
+        private string serverIPAddress = "";
+
         // Client sockets
         private Socket clientSocket;
         private Socket clientSocketFiles;
@@ -27,15 +34,23 @@ namespace MessengerProjectClient
 
         #region Methods
 
+        /// <summary>
+        /// Constructor that starts up the client connections and interface
+        /// </summary>
         public Client()
         {
             Client_Load();
         }
         
+        /// <summary>
+        /// Receiving IP Address to connect to and name from the client, opening connections to the server, and providing options for the client to use the app
+        /// </summary>
         private void Client_Load()
         {
             // Welcome and connect
             Console.WriteLine("Welcome to messenger!");
+            Console.WriteLine("Enter IP Address of the server you would like to connect to:");
+            this.serverIPAddress += Console.ReadLine();
             Console.WriteLine("To log on, please enter your name:");
             this.name += Console.ReadLine();
             ConnectForMessages();
@@ -43,20 +58,19 @@ namespace MessengerProjectClient
 
             ConsoleKeyInfo cki;
             string msg = "";
-            string file_path = "";
+            string file_path = "../../../../../";
 
             Console.WriteLine("You can now communicate!");
-            Console.WriteLine("Press the 'M' key to start typing a message to send.");
-            Console.WriteLine("Press the 'F' key to send a file.");
-            Console.WriteLine("Note: You will not be able to receive while sending...");
-            Console.WriteLine("Press 'esc' to quit at any time.");
 
-            while (true) 
+            bool connected = true;
+
+            while (connected) 
             {
+                Console.WriteLine("Press 'M' to send a message or 'F' to send a file. (esc to quit)"); 
                 // As long as client is not typing - listen for incoming data
                 while (Console.KeyAvailable == false)
                 {
-                    //TODO wait a second?
+                    Thread.Sleep(1000); // Wait a second so we don't call it so many times
                     // Begin listening (receive messages and files)
                     Listen();
                 }
@@ -65,15 +79,16 @@ namespace MessengerProjectClient
                 {
                     case ConsoleKey.Escape:
                         Disconnect();
+                        connected = false;
                         break;
                     case ConsoleKey.M:
-                        Console.WriteLine("Type your message:");
+                        Console.WriteLine("\nType your message:");
                         msg += Console.ReadLine();
                         Send(msg);
                         msg = "";
                         break;
                     case ConsoleKey.F:
-                        Console.WriteLine("Which file would you like to send? (must be .json or .xml)\nInput full path:");
+                        Console.WriteLine("\nWhich file would you like to send? (must be .json or .xml)\nInput full path relative to the directory containing this application:");
                         file_path += Console.ReadLine();
                         while (!file_path.EndsWith(".json") && !file_path.EndsWith(".xml"))
                         {
@@ -88,10 +103,12 @@ namespace MessengerProjectClient
                         break;
 
                 }
-                Console.WriteLine("Press 'M' to send a message or 'F' to send a file.");  
             }
         }
 
+        /// <summary>
+        /// Starts connection for sending/receiving text. Sends a Login packet to notify were online...
+        /// </summary>
         private void ConnectForMessages()
         {
             try
@@ -105,7 +122,7 @@ namespace MessengerProjectClient
                 this.clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
                 // Initialise server IP
-                IPAddress serverIP = IPAddress.Parse("127.0.0.1");
+                IPAddress serverIP = IPAddress.Parse(serverIPAddress);
 
                 // Initialise the IPEndPoint for the server and use port 8080
                 IPEndPoint server = new IPEndPoint(serverIP, 8080);
@@ -121,36 +138,61 @@ namespace MessengerProjectClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Connection Error: " + ex.Message, "UDP Client");
+                Console.WriteLine("ConnectForMessages Error: " + ex.Message);
             }
         }
 
+        /// <summary>
+        /// Starts connection for sending/receiving files
+        /// </summary>
         private void ConnectForFiles()
         {
-            // Intitialize Socket
-            clientSocketFiles = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            try
+            {
+                // Intitialize Socket
+                clientSocketFiles = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
-            // Initialise server IP
-            IPAddress serverIP = IPAddress.Parse("127.0.0.1");
+                // Initialise server IP
+                IPAddress serverIP = IPAddress.Parse(serverIPAddress);
 
-            // Initialise the IPEndPoint for the server and use port 8081
-            IPEndPoint server = new IPEndPoint(serverIP, 8081);
+                // Initialise the IPEndPoint for the server and use port 8081
+                IPEndPoint server = new IPEndPoint(serverIP, 8081);
 
-            // Initialise the EndPoint for the server
-            epServerFiles = (EndPoint)server;
+                // Initialise the EndPoint for the server
+                epServerFiles = (EndPoint)server;
 
-            clientSocketFiles.BeginConnect(serverIP, 8081, endConnect, null);
+                clientSocketFiles.BeginConnect(serverIP, 8081, Connect, null);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("ConnectForFiles Error: " + ex.Message);
+            }
         }
 
+        /// <summary>
+        /// Listen for incoming messages or files
+        /// </summary>
         private void Listen()
         {
-            // listen for message broadcasts
-            clientSocket.BeginReceiveFrom(this.dataStream, 0, this.dataStream.Length, SocketFlags.None, ref epServer, new AsyncCallback(this.ReceiveData), null);
+            try
+            {
+                // listen for message broadcasts
+                clientSocket.BeginReceiveFrom(this.dataStream, 0, this.dataStream.Length, SocketFlags.None, ref epServer, new AsyncCallback(this.ReceiveData), null);
 
-            // listen for file broadcasts
-            clientSocketFiles.BeginReceiveFrom(this.fileDataStream, 0, this.fileDataStream.Length, SocketFlags.None, ref epServerFiles, new AsyncCallback(this.ReceiveFile), null);
+                // listen for file broadcasts
+                clientSocketFiles.BeginReceive(this.fileDataStream, 0, this.fileDataStream.Length, SocketFlags.None, new AsyncCallback(this.ReceiveFile), clientSocketFiles);
+            }
+            catch (ObjectDisposedException)
+            { }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Listen Error: " + ex.Message);
+            }
         }
 
+        /// <summary>
+        /// Disconnect from the server. Send a Logout message to notify other clients...
+        /// </summary>
         private void Disconnect()
         {
             try
@@ -173,10 +215,13 @@ namespace MessengerProjectClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Closing Error: " + ex.Message, "UDP Client");
+                Console.WriteLine("Closing Error: " + ex.Message);
             }
         }
 
+        /// <summary>
+        /// Send a message
+        /// </summary>
         private void Send(string msg)
         {
             try
@@ -195,10 +240,13 @@ namespace MessengerProjectClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Send Error: " + ex.Message, "UDP Client");
+                Console.WriteLine("Send Error: " + ex.Message);
             }
         }
 
+        /// <summary>
+        /// Send a file
+        /// </summary>
         private void SendAFile(string file_path)
         {
             try
@@ -218,16 +266,21 @@ namespace MessengerProjectClient
                 Array.Copy(byteData, 0, byteDataFile, 1, byteData.Length); 
 
                 // Send data to the server
-                clientSocketFiles.BeginSendTo(byteDataFile, 0, byteDataFile.Length, SocketFlags.None, epServerFiles, new AsyncCallback(this.SendFile), null);
+                clientSocketFiles.BeginSend(byteDataFile, 0, byteDataFile.Length, SocketFlags.None, new AsyncCallback(this.SendFile), clientSocketFiles);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("SendFile Error: " + ex.Message, "TCP Client");
+                Console.WriteLine("SendFile Error: " + ex.Message);
             }
         }
         #endregion
 
         #region Callbacks
+
+        /// <summary>
+        /// Asyncronous callback function to handle the sending of data for messages
+        /// </summary>
+        /// <param name="ar"> the status of our asynchronous operation </param>
         private void SendData(IAsyncResult ar)
         {
             try
@@ -236,10 +289,14 @@ namespace MessengerProjectClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Send Data: " + ex.Message, "UDP Client");
+                Console.WriteLine("Send Data: " + ex.Message);
             }
         }
 
+        /// <summary>
+        /// Asyncronous callback function to handle the sending of files
+        /// </summary>
+        /// <param name="ar"> the status of our asynchronous operation </param>
         private void SendFile(IAsyncResult ar)
         {
             try
@@ -248,35 +305,47 @@ namespace MessengerProjectClient
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Send File: " + ex.Message, "TCP Client");
+                Console.WriteLine("Send File: " + ex.Message);
             }
         }
 
+        /// <summary>
+        /// Asyncronous callback function to handle the receiving of messages. Prints to the console and continues
+        /// </summary>
+        /// <param name="ar"> the status of our asynchronous operation </param>
         private void ReceiveData(IAsyncResult ar)
         {
             try
             {
-                // Receive all data
-                this.clientSocket.EndReceive(ar);
-
                 // Initialise a packet object to store the received data
                 Packet receivedData = new Packet(this.dataStream);
+                
+                // Initialise the IPEndPoint for the server
+                IPEndPoint serverIPEP = new IPEndPoint(IPAddress.Parse(serverIPAddress), 8080);
+
+                // Initialise the EndPoint for the clients
+                EndPoint epServer = (EndPoint)serverIPEP;
+
+                // Receive all data
+                clientSocket.EndReceiveFrom(ar, ref epServer);
 
                 // Print data received to the console
                 Console.WriteLine("Incoming Message:");
                 Console.WriteLine(receivedData.ChatMessage);
-                
-                // Reset data stream
-                this.dataStream = new byte[1024];
+                Console.WriteLine("Press 'M' to send a message or 'F' to send a file. (esc to quit)"); 
             }
             catch (ObjectDisposedException)
             { }
             catch (Exception ex)
             {
-                Console.WriteLine("Receive Data: " + ex.Message, "UDP Client");
+                Console.WriteLine("Receive Data: " + ex.Message);
             }
         }
 
+        /// <summary>
+        /// Asyncronous callback function to handle the receiving of files. Ask if user wants it and then takes details for where to save it.
+        /// </summary>
+        /// <param name="ar"> the status of our asynchronous operation </param>
         private void ReceiveFile(IAsyncResult ar)
         {
             try
@@ -284,8 +353,10 @@ namespace MessengerProjectClient
                 // Receive all data
                 this.clientSocket.EndReceive(ar);
 
+                
+
                 // Notify user that a file was received and ask if they would like to accept
-                Console.WriteLine("File received! Would you like to accept it? (y/n)");
+                Console.WriteLine("\nFile received! Would you like to accept it? (y/n)");
                 ConsoleKeyInfo cki;
                 cki = Console.ReadKey();
                 while (cki.Key != ConsoleKey.Y && cki.Key != ConsoleKey.N)
@@ -301,8 +372,8 @@ namespace MessengerProjectClient
                 }
 
                 // Otherwise ask where he wants to save it and what he wants to name it...
-                string path = "";
-                Console.WriteLine("Where would you like to save it? (input path ending with a slash...)");
+                string path = "../../../../../";
+                Console.WriteLine("\nWhere would you like to save it?\n(input path relative to the directory containing this application and end with a slash...)");
                 path += Console.ReadLine();
                 Console.WriteLine("What would you like to name it? (do not include extension)");
                 path += Console.ReadLine();
@@ -312,26 +383,29 @@ namespace MessengerProjectClient
                 byte[] fileStream = fileDataStream.Skip(1).Take(4095).ToArray();
                 path += (type) ? ".json" : ".xml";
                 File.WriteAllBytes(path, fileStream);
-                
-                // Reset data stream
-                this.fileDataStream = new byte[4096];
+
+                Console.WriteLine("File saved!");
+                Console.WriteLine("Press 'M' to send a message or 'F' to send a file. (esc to quit)"); 
             }
             catch (ObjectDisposedException)
             { }
             catch (Exception ex)
             {
-                Console.WriteLine("Receive File: " + ex.Message, "TCP Client");
+                Console.WriteLine("Receive File: " + ex.Message);
             }
         }
         
-        private void endConnect(IAsyncResult ar) {
+        /// <summary>
+        /// Asyncronous callback function to handle the TCP connection
+        /// </summary>
+        /// <param name="ar"> the status of our asynchronous operation </param>
+        private void Connect(IAsyncResult ar) {
             try {
                 clientSocketFiles.EndConnect(ar);
             } catch (Exception ex) {
-                Console.WriteLine("Connection attempt is unsuccessful: " + ex.Message, "TCP Client");
+                Console.WriteLine("Connection attempt is unsuccessful: " + ex.Message);
             }
         }
-
         #endregion
     }
 }

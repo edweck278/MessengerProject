@@ -1,11 +1,15 @@
 using System.Net.Sockets;
 using System.Net;
 using System.Collections;
+using System.Threading;
 
 using MessengerPacket;
 
 namespace MessengerProject
 {
+    /// <summary>
+    /// Server class is a console application that implements the behavior of a server for client-server communication.
+    /// </summary>
     public class Server
     {
         #region Private Members
@@ -31,14 +35,26 @@ namespace MessengerProject
         #endregion
 
         #region Methods
+        /// <summary>
+        /// Constructor that starts up the server and handles the closing of it
+        /// </summary>
         public Server()
         {
             Server_Load();
             // Add something to block the console thread because everything is running in the background!
             Console.WriteLine("Press Enter to close the server...");
             Console.ReadLine();
-            CloseAllSockets();
+            while (clientSockets.Count != 0)
+            {
+                Console.WriteLine("Clients still connected, cannot close server.");
+                Console.ReadLine();
+            }
+            CloseSockets();
         }
+
+        /// <summary>
+        /// Starts up two connections to receive messages or files
+        /// </summary>        
         private void Server_Load()
         {
             // Initialise the ArrayList of connected clients
@@ -49,6 +65,10 @@ namespace MessengerProject
             ConnectForFiles();
             
         }
+        
+        /// <summary>
+        /// Initializes socket on port for messages and starts listening for messages
+        /// </summary>
         private void ConnectForMessages() 
         {
             try
@@ -73,10 +93,13 @@ namespace MessengerProject
             }
             catch (Exception ex)
             {
-                Console.WriteLine("ConnectForMessages Error: " + ex.Message, "UDP Server");
+                Console.WriteLine("ConnectForMessages Error: " + ex.Message);
             }
         }
 
+        /// <summary>
+        /// Initializes socket on port for files and starts listening for files
+        /// </summary>
         private void ConnectForFiles()
         {
             try
@@ -96,22 +119,44 @@ namespace MessengerProject
             }
             catch (Exception ex) 
             { 
-                Console.WriteLine("ConnectForFiles Error: " + ex.Message, "TCP Server");
+                Console.WriteLine("ConnectForFiles Error: " + ex.Message);
             }
         }
 
-        private void CloseAllSockets()
+        /// <summary>
+        /// Close sockets when were done
+        /// </summary>
+        private void CloseSockets()
         {
+            /*
+            // Ideally send empty file to signal Disconnect() from client but couldn't manage
             foreach (Socket socket in clientSockets)
             {
+                send empty byte array
+                Console.WriteLine("Closing");
                 socket.Close();
             }
-            serverSocket.Close();
-            serverSocketFiles.Close();
+            */
+            try
+            {
+                serverSocket.Close();
+                serverSocketFiles.Close();
+            }
+            catch (ObjectDisposedException)
+            { }
+            catch (Exception ex)
+            {
+                Console.WriteLine("CloseSockets Error: " + ex.Message);
+            }
         }
         #endregion
 
         #region Callbacks
+
+        /// <summary>
+        /// Asyncronous callback function to handle the sending of data for messages
+        /// </summary>
+        /// <param name="asyncResult"> the status of our asynchronous operation </param>
         private void SendData(IAsyncResult asyncResult)
         {
             try
@@ -120,10 +165,14 @@ namespace MessengerProject
             }
             catch (Exception ex)
             {
-                Console.WriteLine("SendData Error: " + ex.Message, "UDP Server");
+                Console.WriteLine("SendData Error: " + ex.Message);
             }
         }
 
+        /// <summary>
+        /// Asyncronous callback function to handle the sending of files
+        /// </summary>
+        /// <param name="asyncResult"> the status of our asynchronous operation </param>
         private void SendFile(IAsyncResult asyncResult)
         {
             try
@@ -134,11 +183,15 @@ namespace MessengerProject
             }
             catch (Exception ex)
             {
-                Console.WriteLine("SendFile Error: " + ex.Message, "TCP Server");
+                Console.WriteLine("SendFile Error: " + ex.Message);
             }
         }
 
-
+        /// <summary>
+        /// Asyncronous callback function to handle the receiving of data for messages.
+        /// Examines the type of message and delegates the necessary actions like logging in, logging out, and broadcasting messages...
+        /// </summary>
+        /// <param name="asyncResult"> the status of our asynchronous operation </param>
         private void ReceiveData(IAsyncResult asyncResult)
         {
             try
@@ -207,11 +260,11 @@ namespace MessengerProject
 
                 foreach (Client client in this.clientList)
                 {
-                    //if (client.endPoint != epSender) // Don't send to client we received from
-                    //{
-                    // Broadcast to all logged on users
-                    serverSocket.BeginSendTo(data, 0, data.Length, SocketFlags.None, client.endPoint, new AsyncCallback(this.SendData), client.endPoint);
-                    //}
+                    if (client.endPoint != epSender) // Don't send to client we received from
+                    {
+                        // Broadcast to all other logged on users
+                        serverSocket.BeginSendTo(data, 0, data.Length, SocketFlags.None, client.endPoint, new AsyncCallback(this.SendData), client.endPoint);
+                    }
                 }
 
                 // Print message we sent out to server console
@@ -224,10 +277,14 @@ namespace MessengerProject
             { }
             catch (Exception ex)
             {
-                Console.WriteLine("ReceiveData Error: " + ex.Message, "UDP Server");
+                Console.WriteLine("ReceiveData Error: " + ex.Message);
             }
         }
 
+        /// <summary>
+        /// Asyncronous callback function to handle the receiving of files and sending them out to other clients
+        /// </summary>
+        /// <param name="asyncResult"> the status of our asynchronous operation </param>
         private void ReceiveFile(IAsyncResult asyncResult)
         {
             try
@@ -237,15 +294,24 @@ namespace MessengerProject
                 int received;
                 received = socket.EndReceive(asyncResult);
 
+                // Get sender endpoint
+                IPEndPoint sep = (IPEndPoint)socket.RemoteEndPoint;
+
                 // Make byte array the length of data sent and store the data in the array
                 byte[] data = new byte[received];
                 Buffer.BlockCopy(fileDataStream, 0, data, 0, data.Length);
 
+                Console.WriteLine("File Received");
+
                 // Send file received out to clients
                 foreach (Socket clientSocket in clientSockets)
                 {
-                    // put condition to not send to sender
-                    clientSocket.BeginSend(data, 0, data.Length, SocketFlags.None, new AsyncCallback(SendFile), clientSocket);
+                    IPEndPoint cep = (IPEndPoint)clientSocket.RemoteEndPoint;
+                    if (!cep.Address.Equals(sep.Address)) // Don't send back to the sender
+                    {
+                        clientSocket.BeginSend(data, 0, data.Length, SocketFlags.None, new AsyncCallback(SendFile), clientSocket);
+                    }
+                    
                 }
 
                 // Listen for more potential files from this client
@@ -255,11 +321,15 @@ namespace MessengerProject
             { }
             catch (Exception ex)
             {
-                Console.WriteLine("ReceiveFile Error: " + ex.Message, "TCP Server");
+                Console.WriteLine("ReceiveFile Error: " + ex.Message);
             }
 
         }
 
+        /// <summary>
+        /// Asyncronous callback function to handle the intiation of a TCP connection (for our files stream)
+        /// </summary>
+        /// <param name="asyncResult"> the status of our asynchronous operation </param>
         private void AcceptCallback(IAsyncResult asyncResult) 
         {
             try 
@@ -280,9 +350,9 @@ namespace MessengerProject
             { }
             catch (Exception ex) 
             { 
-                Console.WriteLine("AcceptCallback Error: " + ex.Message, "TCP Server");
+                Console.WriteLine("AcceptCallback Error: " + ex.Message);
             }
-}
+        }
         #endregion
     }
 }
